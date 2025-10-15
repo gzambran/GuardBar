@@ -10,7 +10,6 @@ import Combine
 
 @MainActor
 class PollingService: ObservableObject {
-    @Published private(set) var lastStatus: AGHStatus?
     @Published private(set) var isPolling = false
     
     private var timer: Timer?
@@ -32,13 +31,13 @@ class PollingService: ObservableObject {
         // Create timer on main run loop
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                await self?.checkStatus()
+                await self?.poll()
             }
         }
         
         // Fire immediately on start
         Task {
-            await checkStatus()
+            await poll()
         }
     }
     
@@ -48,36 +47,14 @@ class PollingService: ObservableObject {
         isPolling = false
     }
     
-    private func checkStatus() async {
+    private func poll() async {
         guard let client = client else { return }
         
-        // Fetch status (lightweight, no stats)
+        // Fetch both status and stats
         await client.fetchStatus()
+        await client.fetchStats()
         
-        // Check if status changed
-        if let newStatus = client.status {
-            let statusChanged = lastStatus?.protectionEnabled != newStatus.protectionEnabled
-            lastStatus = newStatus
-            
-            if statusChanged {
-                // Post notification to update menu bar icon
-                updateMenuBarIcon(for: newStatus)
-            }
-        } else if client.errorMessage != nil {
-            // Connection error - update icon to error state
-            NotificationCenter.default.post(
-                name: .menuBarIconStateChanged,
-                object: MenuBarIconState.error
-            )
-        }
-    }
-    
-    private func updateMenuBarIcon(for status: AGHStatus) {
-        let state: MenuBarIconState = status.protectionEnabled ? .protectionOn : .protectionOff
-        
-        NotificationCenter.default.post(
-            name: .menuBarIconStateChanged,
-            object: state
-        )
+        // Notify that new data is available
+        NotificationCenter.default.post(name: .pollingDataUpdated, object: nil)
     }
 }

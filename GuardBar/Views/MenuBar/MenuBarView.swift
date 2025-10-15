@@ -37,8 +37,7 @@ struct MenuBarView: View {
                         status: viewModel.status,
                         isLoading: viewModel.isLoading,
                         protectionOn: currentProtectionState,
-                        timerService: timerService,
-                        onCancelTimer: handleCancelTimer
+                        timerService: timerService
                     )
                     
                     // Disable options
@@ -49,49 +48,53 @@ struct MenuBarView: View {
                         enabledPresets: settings.enabledPresets,
                         onDisableForDuration: handleDisableForDuration,
                         onDisablePermanently: handleDisablePermanently,
-                        onEnable: handleEnable
+                        onEnable: handleEnable,
+                        onCancelTimer: handleCancelTimer
                     )
                     
-                    // Error message
-                    if let error = viewModel.errorMessage {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text(error)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    Divider()
+                    
+                    // Stats - always reserve space to prevent layout shift
+                    Group {
+                        if let stats = viewModel.stats {
+                            StatsView(stats: stats)
+                        } else {
+                            // Placeholder to maintain height while stats load
+                            Color.clear
+                                .frame(height: 97) // Approximate StatsView height
                         }
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
                     }
                     
                     Divider()
                     
-                    // Stats
-                    if let stats = viewModel.stats {
-                        StatsView(stats: stats)
-                        Divider()
-                    }
+                    Divider()
                     
                     // Actions
                     ActionsView(
                         dashboardHost: settings.host,
                         onRefresh: handleRefresh
                     )
-                    
-                    Spacer()
                 }
             }
         }
-        .frame(width: 300)
         .onAppear {
             viewModel.configure(settings: settings)
+            // Auto-refresh on open to ensure fresh data
+            Task {
+                await viewModel.refresh()
+            }
         }
-        // Reconfigure when connection settings change (combined observer)
+        // Listen for polling updates
+        .onReceive(NotificationCenter.default.publisher(for: .pollingDataUpdated)) { _ in
+            Task {
+                await viewModel.refresh()
+            }
+        }
+        // Reconfigure when connection settings change
         .onChange(of: settings.host) { viewModel.configure(settings: settings) }
         .onChange(of: settings.port) { viewModel.configure(settings: settings) }
         .onChange(of: settings.username) { viewModel.configure(settings: settings) }
-        // Update icon when view state changes
+        // Update icon when view state changes (SINGLE SOURCE OF TRUTH)
         .onChange(of: viewModel.status?.protectionEnabled) {
             updateMenuBarIcon()
             // Clear optimistic state when actual status updates
@@ -104,9 +107,6 @@ struct MenuBarView: View {
         .onChange(of: timerService.isTimerActive) { updateMenuBarIcon() }
         .onChange(of: viewModel.errorMessage) { updateMenuBarIcon() }
         .onChange(of: viewModel.isLoading) { updateMenuBarIcon() }
-        .task {
-            await viewModel.refresh()
-        }
     }
     
     // MARK: - Action Handlers
@@ -132,8 +132,8 @@ struct MenuBarView: View {
         // Make API call to disable
         await viewModel.toggleProtection(enable: false, suppressErrors: true)
         
-        // Close the menu
-        closePopover()
+        // Don't close the menu - let user see the timer
+        // closePopover()
     }
     
     private func handleDisablePermanently() async {
@@ -154,8 +154,8 @@ struct MenuBarView: View {
         // Make API call
         await viewModel.toggleProtection(enable: true, suppressErrors: true)
         
-        // Close the menu
-        closePopover()
+        // Don't close the menu
+        // closePopover()
     }
     
     private func handleRefresh() async {

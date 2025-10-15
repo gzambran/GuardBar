@@ -16,9 +16,14 @@ struct DisableOptionsView: View {
     let onDisableForDuration: (TimeInterval) async -> Void
     let onDisablePermanently: () async -> Void
     let onEnable: () async -> Void
+    let onCancelTimer: () async -> Void
     
     private var isDisabled: Bool {
         !protectionOn || isTimerActive || hasError
+    }
+    
+    private var isEnableDisabled: Bool {
+        protectionOn || hasError  // Removed isTimerActive - button should be enabled when timer is active
     }
     
     var body: some View {
@@ -75,24 +80,30 @@ struct DisableOptionsView: View {
                 .allowsHitTesting(!isDisabled)
             }
             
-            // Enable button (only show when protection is OFF and no timer is active)
-            if !protectionOn && !isTimerActive {
-                Button {
-                    Task {
-                        await onEnable()
+            // Enable button - always visible
+            // Enabled when protection is OFF (including when timer is active)
+            Button {
+                guard !isEnableDisabled else { return }
+                Task {
+                    // If timer is active, cancel it first
+                    if isTimerActive {
+                        await onCancelTimer()
                     }
-                } label: {
-                    HStack {
-                        Image(systemName: "shield.fill")
-                            .frame(width: 20)
-                        Text("Enable Ad Blocking")
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
+                    await onEnable()
                 }
-                .buttonStyle(.plain)
-                .foregroundColor(.primary)
+            } label: {
+                HStack {
+                    Image(systemName: "shield.fill")
+                        .frame(width: 20)
+                    Text("Enable Ad Blocking")
+                    Spacer()
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .foregroundColor(isEnableDisabled ? .secondary : .primary)
+            .opacity(isEnableDisabled ? 0.5 : 1.0)
+            .allowsHitTesting(!isEnableDisabled)
         }
         .padding()
     }
@@ -108,12 +119,13 @@ struct DisableOptionsView: View {
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
             onDisableForDuration: { _ in },
             onDisablePermanently: { },
-            onEnable: { }
+            onEnable: { },
+            onCancelTimer: { }
         )
         
         Divider()
         
-        // Preview with protection OFF (show enable button)
+        // Preview with protection OFF (enable button enabled)
         DisableOptionsView(
             protectionOn: false,
             isTimerActive: false,
@@ -121,12 +133,13 @@ struct DisableOptionsView: View {
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
             onDisableForDuration: { _ in },
             onDisablePermanently: { },
-            onEnable: { }
+            onEnable: { },
+            onCancelTimer: { }
         )
         
         Divider()
         
-        // Preview with timer active (options disabled)
+        // Preview with timer active (all disable options disabled, enable shows "Cancel & Enable Now")
         DisableOptionsView(
             protectionOn: false,
             isTimerActive: true,
@@ -134,7 +147,8 @@ struct DisableOptionsView: View {
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
             onDisableForDuration: { _ in },
             onDisablePermanently: { },
-            onEnable: { }
+            onEnable: { },
+            onCancelTimer: { }
         )
     }
     .frame(width: 300)

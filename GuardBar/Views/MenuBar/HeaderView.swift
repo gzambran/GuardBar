@@ -13,53 +13,48 @@ struct HeaderView: View {
     let isLoading: Bool
     let protectionOn: Bool
     @ObservedObject var timerService: TimerService
-    let onCancelTimer: () async -> Void
     
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                // Main status line - icon and text centered together
-                HStack(spacing: 12) {
-                    Image(systemName: statusIcon)
-                        .foregroundColor(statusColor)
-                        .font(.system(size: 32))
+            HStack(spacing: 12) {
+                // SLOT 1: Status icon (always 32pt)
+                Image(systemName: statusIcon)
+                    .foregroundColor(statusColor)
+                    .font(.system(size: 32))
+                    .frame(width: 32, height: 32)
+                
+                // SLOT 2: Text area (FIXED width) - Use overlay to prevent layout changes
+                ZStack {
+                    // Base layer - always present
+                    Text("Ad Blocking: OFF")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .opacity(0) // Invisible but maintains layout
                     
-                    // Show loading state when no status data yet OR actively loading
-                    if status == nil || isLoading {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                                .scaleEffect(0.7)
+                    // Actual content layers - overlaid on top
+                    Group {
+                        if status == nil || isLoading {
                             Text("Loading...")
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                        }
-                    } else {
-                        Text("Ad Blocking: \(protectionOn ? "ON" : "OFF")")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                    }
-                }
-                
-                // Timer line below (separate from main status)
-                if timerService.isTimerActive {
-                    HStack(spacing: 8) {
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 12))
-                        
-                        Text(timerService.remainingTime > 0 ? "Re-enabling in \(timerService.formatRemainingTime())" : "Re-enabling...")
-                            .font(.subheadline)
-                            .frame(minWidth: 120, alignment: .leading) // Fixed minimum width
-                        
-                        Button("Cancel") {
-                            Task {
-                                await onCancelTimer()
+                        } else if timerService.isTimerActive {
+                            if timerService.remainingTime > 0 {
+                                Text("Re-enabling in \(timerService.formatRemainingTime())")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Text("Re-enabling...")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
                             }
+                        } else {
+                            Text("Ad Blocking: \(protectionOn ? "ON" : "OFF")")
+                                .font(.title3)
+                                .fontWeight(.semibold)
                         }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.accentColor)
-                        .font(.subheadline)
                     }
                 }
+                .frame(width: 200, alignment: .leading)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
@@ -108,8 +103,7 @@ struct HeaderView: View {
             status: nil,
             isLoading: true,
             protectionOn: false,
-            timerService: TimerService(),
-            onCancelTimer: { }
+            timerService: TimerService()
         )
         
         Divider()
@@ -128,8 +122,7 @@ struct HeaderView: View {
                 let service = TimerService()
                 service.scheduleReEnable(after: 300) { }
                 return service
-            }(),
-            onCancelTimer: { }
+            }()
         )
         
         Divider()
@@ -144,8 +137,7 @@ struct HeaderView: View {
             ),
             isLoading: false,
             protectionOn: true,
-            timerService: TimerService(),
-            onCancelTimer: { }
+            timerService: TimerService()
         )
     }
     .frame(width: 300)

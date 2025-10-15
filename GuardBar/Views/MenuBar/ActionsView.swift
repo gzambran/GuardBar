@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Displays action buttons: Dashboard, Refresh, Settings, Quit
+/// Displays action buttons: Dashboard, Refresh Stats, Settings, Quit
 struct ActionsView: View {
     let dashboardHost: String
     let onRefresh: () async -> Void
@@ -19,10 +19,12 @@ struct ActionsView: View {
                 MenuButton(title: "Open Dashboard", icon: "safari") {
                     if let url = URL(string: "http://\(dashboardHost)") {
                         NSWorkspace.shared.open(url)
+                        // Close the menu after opening dashboard
+                        NotificationCenter.default.post(name: .closeMenuBarPopover, object: nil)
                     }
                 }
                 
-                MenuButton(title: "Refresh", icon: "arrow.clockwise") {
+                MenuButton(title: "Refresh Stats", icon: "arrow.clockwise") {
                     Task {
                         await onRefresh()
                     }
