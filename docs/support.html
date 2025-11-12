@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - GuardBar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #1d1d1f;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #1d1d1f;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #424245;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #6e6e73;
+        }
+
+        ul {
+            margin-bottom: 15px;
+            margin-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: #6e6e73;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #86868b;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: #f5f5f7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #1d1d1f;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #0071e3;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 10px 10px 10px 0;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #0077ed;
+            text-decoration: none;
+        }
+
+        .button-secondary {
+            background-color: #6e6e73;
+        }
+
+        .button-secondary:hover {
+            background-color: #86868b;
+        }
+
+        a {
+            color: #0071e3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            background-color: #f5f5f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #d2d2d7;
+            text-align: center;
+            color: #86868b;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GuardBar Support</h1>
+        <p class="subtitle">Get help with GuardBar for macOS</p>
+
+        <div class="card">
+            <h3>Need Help?</h3>
+            <p>For bug reports, feature requests, or technical issues, please use our GitHub issue tracker.</p>
+            <a href="https://github.com/gzambran/GuardBar/issues" target="_blank" class="button">Report an Issue</a>
+            <a href="https://github.com/gzambran/GuardBar" target="_blank" class="button button-secondary">View Documentation</a>
+        </div>
+
+        <h2>Getting Started</h2>
+        <p>For setup instructions and documentation, please refer to the <a href="https://github.com/gzambran/GuardBar#readme" target="_blank">README</a> on GitHub.</p>
+
+        <h2>Common Issues</h2>
+
+        <h3>Connection Failed</h3>
+        <p>If GuardBar cannot connect to your AdGuard Home server:</p>
+        <ul>
+            <li>Verify your AdGuard Home server is running and accessible</li>
+            <li>Check that the host/IP address and port are correct in Settings</li>
+            <li>Ensure your username and password are correct</li>
+            <li>Try accessing your AdGuard Home dashboard directly in a browser: <code>http://your-server:port</code></li>
+            <li>Check if your Mac and AdGuard Home server are on the same network (or reachable)</li>
+        </ul>
+
+        <h3>Local Network Permission</h3>
+        <p>macOS may prompt you to allow GuardBar to access devices on your local network. This is required for GuardBar to communicate with your AdGuard Home server.</p>
+        <ul>
+            <li>Click "Allow" when prompted</li>
+            <li>If you denied permission, go to System Settings → Privacy & Security → Local Network</li>
+            <li>Enable GuardBar in the list</li>
+        </ul>
+
+        <h3>Status Not Updating</h3>
+        <p>If the protection status seems stuck or not updating:</p>
+        <ul>
+            <li>Click the menu bar icon and use the "Refresh" button</li>
+            <li>Check your polling interval in Settings (Preferences tab)</li>
+            <li>Verify the connection to your AdGuard Home server is working</li>
+        </ul>
+
+        <h3>Timer Not Working</h3>
+        <p>If the auto re-enable timer isn't working as expected:</p>
+        <ul>
+            <li>Check that your Mac isn't going to sleep during the timer period</li>
+            <li>Verify the timer is still active by opening the menu bar dropdown</li>
+            <li>You can cancel an active timer and manually re-enable protection</li>
+        </ul>
+
+        <h2>System Requirements</h2>
+        <ul>
+            <li>macOS 14.0 (Sonoma) or later</li>
+            <li>AdGuard Home instance running on your network</li>
+            <li>AdGuard Home credentials (username and password)</li>
+        </ul>
+
+        <h2>Privacy</h2>
+        <p>GuardBar does not collect any user data. All settings are stored locally on your Mac. For more information, see our <a href="privacy.html">Privacy Policy</a>.</p>
+
+        <h2>Open Source</h2>
+        <p>GuardBar is open source software. You can review the code, report issues, or contribute at:</p>
+        <p><a href="https://github.com/gzambran/GuardBar" target="_blank">https://github.com/gzambran/GuardBar</a></p>
+
+        <h2>Contact</h2>
+        <p>For questions or feedback:</p>
+        <ul>
+            <li>GitHub: <a href="https://github.com/gzambran" target="_blank">@gzambran</a></li>
+            <li>Issues: <a href="https://github.com/gzambran/GuardBar/issues" target="_blank">GitHub Issues</a></li>
+        </ul>
+
+        <div class="footer">
+            <p>&copy; 2025 GuardBar. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

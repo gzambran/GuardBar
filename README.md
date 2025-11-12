@@ -2,7 +2,7 @@
 
 A native macOS menu bar application for managing [AdGuard Home](https://adguard.com/en/adguard-home/overview.html).
 
-## 🚀 Status
+## Status
 
 GuardBar is currently in active development and testing.
 
@@ -10,7 +10,7 @@ GuardBar is currently in active development and testing.
 
 Want to try it early? You can build from source (see instructions below).
 
-## ✨ Features
+## Features
 
 - **Quick Access** - Manage AdGuard Home directly from your menu bar
 - **One-Click Toggle** - Enable or disable ad blocking instantly
@@ -20,13 +20,13 @@ Want to try it early? You can build from source (see instructions below).
 - **Start at Login** - Launches automatically with macOS
 - **Native Experience** - Built with SwiftUI for a smooth, modern macOS feel
 
-## 📋 Requirements
+## Requirements
 
 - macOS 14.0 (Sonoma) or later
 - AdGuard Home instance (running on your network)
 - AdGuard Home credentials (username and password)
 
-## 🛠️ Building from Source
+## Building from Source
 
 ### Prerequisites
 
@@ -61,19 +61,19 @@ open GuardBar.xcodeproj
    - Password
 4. Click "Test Connection" to verify
 
-## 🎯 Usage
+## Usage
 
 ### Toggle Protection
 
-- **Enable/Disable**: Click the menu bar icon and select "Enable Ad Blocking" or "Disable for → Permanently"
+- **Enable/Disable**: Click the menu bar icon and select "Enable Ad Blocking" or "Disable for Permanently"
 - **Temporary Disable**: Choose a preset time (30 seconds to 2 hours) for automatic re-enable
 
 ### Menu Bar Icons
 
-- 🟢 **Green Shield**: Protection is ON
-- 🔴 **Red Shield**: Protection is OFF
-- 🟠 **Orange Clock**: Timer active (will re-enable automatically)
-- ⚪ **Gray Shield**: Loading or connection error
+- **Green Shield**: Protection is ON
+- **Red Shield**: Protection is OFF
+- **Orange Clock**: Timer active (will re-enable automatically)
+- **Gray Shield**: Loading or connection error
 
 ### Settings
 
@@ -87,7 +87,7 @@ Configure:
 - Timer presets
 - Start at login
 
-## 🏗️ Architecture
+## Architecture
 
 GuardBar is built with modern Swift best practices:
 
@@ -98,32 +98,32 @@ GuardBar is built with modern Swift best practices:
 - **Keychain** for secure password storage
 - **Feature-based code organization** for maintainability
 
-## 💰 Support Development
+## Support Development
 
 GuardBar is open source (MIT License). While you can build it yourself, purchasing from the Mac App Store supports development and provides:
 
-- ✅ Easy installation and automatic updates
-- ✅ Priority support
-- ✅ Supports future development
+- Easy installation and automatic updates
+- Priority support
+- Supports future development
 
 **[Coming to Mac App Store Soon]**
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 For major changes, please open an issue first to discuss what you would like to change.
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by [PiBar](https://github.com/amiantos/pibar)
 - Built for the [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) community
 
-## 📧 Contact
+## Contact
 
 - GitHub: [@gzambran](https://github.com/gzambran)
 - Issues: [GitHub Issues](https://github.com/gzambran/GuardBar/issues)
