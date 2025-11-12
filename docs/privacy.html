@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - GuardBar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #1d1d1f;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #1d1d1f;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #424245;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #6e6e73;
+        }
+
+        ul {
+            margin-bottom: 15px;
+            margin-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: #6e6e73;
+        }
+
+        .last-updated {
+            font-size: 0.9em;
+            color: #86868b;
+            margin-bottom: 30px;
+        }
+
+        .highlight {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0071e3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight p {
+            color: #1d1d1f;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        a {
+            color: #0071e3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #d2d2d7;
+            text-align: center;
+            color: #86868b;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Policy for GuardBar</h1>
+        <p class="last-updated">Last Updated: November 12, 2024</p>
+
+        <h2>Overview</h2>
+        <p>GuardBar is a macOS menu bar application that helps you manage your AdGuard Home instance. Your privacy is important to us, and this policy explains how GuardBar handles your data.</p>
+
+        <div class="highlight">
+            <p>GuardBar does not collect, transmit, or store any user data on external servers.</p>
+        </div>
+
+        <p>All data remains local on your Mac.</p>
+
+        <h2>Information Stored Locally</h2>
+        <p>GuardBar stores the following information locally on your device:</p>
+
+        <h3>Connection Settings</h3>
+        <ul>
+            <li>AdGuard Home server address (host/IP and port)</li>
+            <li>Username</li>
+            <li>Password (stored securely in macOS Keychain)</li>
+        </ul>
+        <p>These settings are stored using macOS UserDefaults and Keychain, and never leave your device.</p>
+
+        <h3>App Preferences</h3>
+        <ul>
+            <li>Polling interval settings</li>
+            <li>Timer preset preferences</li>
+            <li>Start at login preference</li>
+            <li>Notification preferences</li>
+        </ul>
+
+        <h2>Network Communication</h2>
+        <p>GuardBar communicates directly with <strong>your</strong> AdGuard Home server using the connection details you provide. This communication:</p>
+        <ul>
+            <li>Occurs only between your Mac and your AdGuard Home server</li>
+            <li>Uses HTTP Basic Authentication</li>
+            <li>Is not routed through any third-party servers</li>
+            <li>Is not monitored, logged, or stored by the developer</li>
+        </ul>
+
+        <h2>Third-Party Services</h2>
+        <p>GuardBar does not use any third-party analytics, tracking, or advertising services.</p>
+
+        <h2>Data Sharing</h2>
+        <p>GuardBar does not share any data with third parties. All communication is between your Mac and your AdGuard Home server.</p>
+
+        <h2>Security</h2>
+        <ul>
+            <li>Passwords are stored securely in the macOS Keychain</li>
+            <li>All communication uses your specified connection method (HTTP/HTTPS)</li>
+            <li>No data is transmitted to the developer or any third party</li>
+        </ul>
+
+        <h2>Children's Privacy</h2>
+        <p>GuardBar does not knowingly collect any information from children.</p>
+
+        <h2>Changes to This Policy</h2>
+        <p>We may update this privacy policy from time to time. Any changes will be reflected in the app's documentation and on the GitHub repository.</p>
+
+        <h2>Contact</h2>
+        <p>If you have questions about this privacy policy, please contact:</p>
+        <ul>
+            <li>GitHub: <a href="https://github.com/gzambran" target="_blank">@gzambran</a></li>
+            <li>Issues: <a href="https://github.com/gzambran/GuardBar/issues" target="_blank">GitHub Issues</a></li>
+        </ul>
+
+        <h2>Open Source</h2>
+        <p>GuardBar is open source software licensed under the MIT License. You can review the complete source code at: <a href="https://github.com/gzambran/GuardBar" target="_blank">https://github.com/gzambran/GuardBar</a></p>
+
+        <div class="footer">
+            <p>&copy; 2024 GuardBar. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
