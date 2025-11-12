@@ -17,5 +17,5 @@ DerivedData/
 # macOS
 .DS_Store
 
-# Project documentation (private)
+# Project documentation
 CLAUDE.md
