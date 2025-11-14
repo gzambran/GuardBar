@@ -6,14 +6,13 @@
 //
 
 import Foundation
-import Combine
 
-class AGHClient: ObservableObject {
-    @Published var status: AGHStatus?
-    @Published var stats: AGHStats?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    
+@MainActor
+class AGHClient {
+    var status: AGHStatus?
+    var stats: AGHStats?
+    var errorMessage: String?
+
     private let baseURL: String
     private let username: String
     private let password: String
@@ -25,22 +24,19 @@ class AGHClient: ObservableObject {
     }
     
     // MARK: - API Methods
-    
-    @MainActor
+
     func fetchStatus() async {
         if let result: AGHStatus = await performRequest(endpoint: "/control/status") {
             self.status = result
         }
     }
     
-    @MainActor
     func fetchStats() async {
         if let result: AGHStats = await performRequest(endpoint: "/control/stats") {
             self.stats = result
         }
     }
     
-    @MainActor
     func toggleProtection(enable: Bool) async {
         let body = ["protection_enabled": enable]
         
@@ -56,7 +52,9 @@ class AGHClient: ObservableObject {
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
-                // Success - small delay to let AdGuard Home process the change
+                // Success - clear any previous errors
+                self.errorMessage = nil
+                // Small delay to let AdGuard Home process the change
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
                 // Refresh status after toggle
                 await fetchStatus()
@@ -69,24 +67,38 @@ class AGHClient: ObservableObject {
         }
     }
     
-    func testConnection() async -> Bool {
-        await withCheckedContinuation { continuation in
-            Task {
-                let url = URL(string: baseURL + "/control/status")!
-                var request = URLRequest(url: url)
-                request.httpMethod = "GET"
-                self.addAuthHeader(to: &request)
-                
-                do {
-                    let (_, response) = try await URLSession.shared.data(for: request)
-                    if let httpResponse = response as? HTTPURLResponse {
-                        continuation.resume(returning: (200...299).contains(httpResponse.statusCode))
-                    } else {
-                        continuation.resume(returning: false)
-                    }
-                } catch {
-                    continuation.resume(returning: false)
+    func testConnection() async -> (success: Bool, errorMessage: String?) {
+        guard let url = URL(string: baseURL + "/control/status") else {
+            return (false, "Invalid URL: \(baseURL)")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+        addAuthHeader(to: &request)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                if (200...299).contains(httpResponse.statusCode) {
+                    return (true, nil)
+                } else if httpResponse.statusCode == 401 {
+                    return (false, "Invalid username or password")
+                } else if httpResponse.statusCode == 429 {
+                    return (false, "Too many failed attempts. AdGuard Home has temporarily blocked access.")
+                } else {
+                    return (false, "Server returned error: HTTP \(httpResponse.statusCode)")
                 }
+            } else {
+                return (false, "Invalid response from server")
+            }
+        } catch let error as NSError {
+            if error.code == NSURLErrorTimedOut {
+                return (false, "Connection timed out. Check your host and port.")
+            } else if error.code == NSURLErrorCannotFindHost || error.code == NSURLErrorCannotConnectToHost {
+                return (false, "Cannot reach server at \(baseURL). Check host and port.")
+            } else {
+                return (false, error.localizedDescription)
             }
         }
     }
@@ -95,58 +107,39 @@ class AGHClient: ObservableObject {
     
     private func performRequest<T: Codable>(endpoint: String, method: String = "GET", body: [String: Any]? = nil) async -> T? {
         guard let url = URL(string: baseURL + endpoint) else {
-            await MainActor.run {
-                self.errorMessage = "Invalid URL"
-                self.isLoading = false
-            }
+            self.errorMessage = "Invalid URL"
             return nil
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = method
         addAuthHeader(to: &request)
-        
+
         // Add body if present
         if let body = body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         }
-        
-        await MainActor.run {
-            self.isLoading = true
-        }
-        
+
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
-                await MainActor.run {
-                    self.errorMessage = "Invalid response"
-                    self.isLoading = false
-                }
+                self.errorMessage = "Invalid response"
                 return nil
             }
-            
+
             guard (200...299).contains(httpResponse.statusCode) else {
-                await MainActor.run {
-                    self.errorMessage = "HTTP \(httpResponse.statusCode)"
-                    self.isLoading = false
-                }
+                self.errorMessage = "HTTP \(httpResponse.statusCode)"
                 return nil
             }
-            
+
             let decoded = try JSONDecoder().decode(T.self, from: data)
-            await MainActor.run {
-                self.errorMessage = nil
-                self.isLoading = false
-            }
+            self.errorMessage = nil
             return decoded
-            
+
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            self.errorMessage = error.localizedDescription
             return nil
         }
     }

@@ -27,8 +27,10 @@ class PollingService: ObservableObject {
         stopPolling()
         
         isPolling = true
-        
+
         // Create timer on main run loop
+        // Note: [weak self] prevents retain cycle - Timer retains closure, closure weakly references self
+        // This is safe: Timer → closure (strong), closure → self (weak)
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.poll()

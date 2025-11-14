@@ -21,7 +21,6 @@ struct StatsView: View {
     }
 }
 
-// Reusable stats row component
 struct StatRow: View {
     let label: String
     let value: String
@@ -44,5 +43,5 @@ struct StatRow: View {
         numReplacedSafebrowsing: 12,
         avgProcessingTime: 0.05
     ))
-    .frame(width: 300)
+    .frame(width: 340)
 }

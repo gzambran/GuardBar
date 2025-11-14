@@ -10,7 +10,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @State private var password: String = ""
-    
+    @State private var showKeychainError = false
+
     var body: some View {
         TabView {
             ConnectionTab(
@@ -40,6 +41,14 @@ struct SettingsView: View {
         .onAppear {
             loadPassword()
         }
+        .alert("Failed to Save Password", isPresented: $showKeychainError) {
+            Button("OK", role: .cancel) {
+                // Clear the password field since it wasn't saved
+                password = ""
+            }
+        } message: {
+            Text("Unable to securely store your password in the keychain. Please try again.")
+        }
     }
     
     // MARK: - Helper Methods
@@ -52,7 +61,10 @@ struct SettingsView: View {
     
     private func savePasswordToKeychain(_ newPassword: String) {
         if !newPassword.isEmpty {
-            _ = KeychainService.shared.savePassword(newPassword)
+            if !KeychainService.shared.savePassword(newPassword) {
+                // Show error alert and clear password field
+                showKeychainError = true
+            }
         }
     }
     

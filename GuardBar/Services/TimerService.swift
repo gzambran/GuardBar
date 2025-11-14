@@ -18,12 +18,13 @@ class TimerService: ObservableObject {
     
     func scheduleReEnable(after duration: TimeInterval, action: @escaping () async -> Void) {
         cancelTimer()
-        
+
         isTimerActive = true
         remainingTime = duration
         endTime = Date().addingTimeInterval(duration)
-        
+
         // Update UI every second
+        // Note: [weak self] prevents retain cycle - Timer retains closure, closure weakly references self
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, let endTime = self.endTime else { return }
             
@@ -38,18 +39,20 @@ class TimerService: ObservableObject {
         
         // Schedule the actual re-enable action
         reenableTask = Task {
+            // Ensure cleanup happens even if action fails
+            defer {
+                Task { @MainActor in
+                    self.isTimerActive = false
+                    self.remainingTime = 0
+                    self.endTime = nil
+                    self.reenableTask = nil
+                }
+            }
+
             try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
-            
+
             // Execute the re-enable action
             await action()
-            
-            // Clean up after action completes
-            await MainActor.run {
-                self.isTimerActive = false
-                self.remainingTime = 0
-                self.endTime = nil
-                self.reenableTask = nil
-            }
         }
     }
     

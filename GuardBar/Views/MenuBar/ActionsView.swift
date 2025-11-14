@@ -75,5 +75,5 @@ struct MenuButton: View {
         dashboardHost: "192.168.1.2",
         onRefresh: { }
     )
-    .frame(width: 300)
+    .frame(width: 340)
 }

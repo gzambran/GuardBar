@@ -13,15 +13,11 @@ struct MenuBarView: View {
     @StateObject private var timerService = TimerService()
     @StateObject private var viewModel = MenuBarViewModel()
     @State private var optimisticProtectionState: Bool? = nil
-    
+    @State private var isConfigured: Bool = false  // Tracks configuration state
+
     // Computed property to get the current protection state (optimistic or actual)
     private var currentProtectionState: Bool {
         optimisticProtectionState ?? viewModel.status?.protectionEnabled ?? false
-    }
-    
-    // Check if settings are configured
-    private var isConfigured: Bool {
-        !settings.host.isEmpty && !settings.username.isEmpty && KeychainService.shared.getPassword() != nil
     }
     
     var body: some View {
@@ -39,7 +35,7 @@ struct MenuBarView: View {
                         protectionOn: currentProtectionState,
                         timerService: timerService
                     )
-                    
+
                     // Disable options
                     DisableOptionsView(
                         protectionOn: currentProtectionState,
@@ -51,9 +47,9 @@ struct MenuBarView: View {
                         onEnable: handleEnable,
                         onCancelTimer: handleCancelTimer
                     )
-                    
+
                     Divider()
-                    
+
                     // Stats - always reserve space to prevent layout shift
                     Group {
                         if let stats = viewModel.stats {
@@ -64,20 +60,21 @@ struct MenuBarView: View {
                                 .frame(height: 97) // Approximate StatsView height
                         }
                     }
-                    
+
                     Divider()
-                    
-                    Divider()
-                    
+
                     // Actions
                     ActionsView(
                         dashboardHost: settings.host,
                         onRefresh: handleRefresh
                     )
                 }
+                .frame(width: 300)
             }
         }
         .onAppear {
+            // Check configuration on appear
+            checkConfiguration()
             viewModel.configure(settings: settings)
             // Auto-refresh on open to ensure fresh data
             Task {
@@ -90,10 +87,15 @@ struct MenuBarView: View {
                 await viewModel.refresh()
             }
         }
-        // Reconfigure when connection settings change
-        .onChange(of: settings.host) { viewModel.configure(settings: settings) }
-        .onChange(of: settings.port) { viewModel.configure(settings: settings) }
-        .onChange(of: settings.username) { viewModel.configure(settings: settings) }
+        // Listen for settings changes to refresh configuration check
+        .onReceive(NotificationCenter.default.publisher(for: .settingsChanged)) { _ in
+            checkConfiguration()
+            // Reconfigure and load data when settings are changed
+            viewModel.configure(settings: settings)
+            Task {
+                await viewModel.refresh()
+            }
+        }
         // Update icon when view state changes (SINGLE SOURCE OF TRUTH)
         .onChange(of: viewModel.status?.protectionEnabled) {
             updateMenuBarIcon()
@@ -109,8 +111,17 @@ struct MenuBarView: View {
         .onChange(of: viewModel.isLoading) { updateMenuBarIcon() }
     }
     
+    // MARK: - Helper Methods
+
+    private func checkConfiguration() {
+        // Safely check configuration state on main thread
+        isConfigured = !settings.host.isEmpty &&
+                      !settings.username.isEmpty &&
+                      KeychainService.shared.getPassword() != nil
+    }
+
     // MARK: - Action Handlers
-    
+
     private func handleCancelTimer() async {
         // Cancel timer first
         timerService.cancelTimer()

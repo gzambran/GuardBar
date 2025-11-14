@@ -25,50 +25,65 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var menuPanel: NSPanel?
     var eventMonitor: Any?
-    var pollingService = PollingService()
+    private var pollingService = PollingService()
     private var settingsCancellables = Set<AnyCancellable>()
     private let settingsWindowManager = SettingsWindowManager()
-    
+
     // Shared settings instance
     let settings = AppSettings()
-    
+
+    deinit {
+        // Clean up event monitor to prevent memory leaks
+        stopMonitoring()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Setup application menu with Quit option
+        setupApplicationMenu()
+
         // Create the status item (menu bar icon)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        
+
         if let button = statusItem?.button {
             updateMenuBarIcon(state: .loading)
             button.action = #selector(togglePanel)
             button.target = self
         }
-        
+
         // Create the custom panel (dropdown menu)
         setupPanel()
-        
-        // Listen for icon state change notifications
+
+        // Register for NotificationCenter notifications
+        // Note: AppDelegate lives for entire app lifetime, so observers are never manually removed
+        // They will be automatically cleaned up when the app terminates
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleIconStateChange),
             name: .menuBarIconStateChanged,
             object: nil
         )
-        
-        // Listen for close panel notifications
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(hidePanel),
             name: .closeMenuBarPopover,
             object: nil
         )
-        
-        // Listen for open settings notifications
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(openSettings),
             name: .openSettings,
             object: nil
         )
-        
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSettingsChanged),
+            name: .settingsChanged,
+            object: nil
+        )
+
         // Setup polling
         setupPolling()
         
@@ -76,6 +91,98 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         observeSettingsChanges()
     }
     
+    private func setupApplicationMenu() {
+        // Create the main menu bar
+        let mainMenu = NSMenu()
+
+        // Create the app menu (first menu in menu bar)
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        appMenuItem.submenu = appMenu
+
+        // Add About menu item
+        let aboutItem = NSMenuItem(
+            title: "About GuardBar",
+            action: #selector(showAbout),
+            keyEquivalent: ""
+        )
+        aboutItem.target = self
+        appMenu.addItem(aboutItem)
+
+        appMenu.addItem(NSMenuItem.separator())
+
+        // Add Settings menu item
+        let settingsItem = NSMenuItem(
+            title: "Settings...",
+            action: #selector(openSettings),
+            keyEquivalent: ","
+        )
+        settingsItem.target = self
+        appMenu.addItem(settingsItem)
+
+        appMenu.addItem(NSMenuItem.separator())
+
+        // Add Quit menu item (required by Apple)
+        let quitItem = NSMenuItem(
+            title: "Quit GuardBar",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        appMenu.addItem(quitItem)
+
+        // Set the main menu
+        NSApplication.shared.mainMenu = mainMenu
+    }
+
+    @objc func showAbout() {
+        // Currently just opens settings window
+        // TabView doesn't easily support programmatic selection in this architecture
+        openSettings()
+    }
+
+    @objc func handleSettingsChanged() {
+        // Give SwiftUI time to update the layout before resizing
+        Task { @MainActor in
+            // Small delay to let SwiftUI recalculate layout
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            resizePanelToFitContent()
+        }
+    }
+
+    private func resizePanelToFitContent() {
+        guard let panel = menuPanel,
+              let hostingView = panel.contentView else { return }
+
+        // Force layout update
+        hostingView.layout()
+
+        // Get the new fitting size
+        let fittingSize = hostingView.fittingSize
+        let newWidth = fittingSize.width > 0 ? fittingSize.width : 340
+        let newHeight = fittingSize.height > 0 ? fittingSize.height : 545
+
+        // Calculate new origin to keep panel centered under button
+        if let button = statusItem?.button,
+           let buttonWindow = button.window,
+           panel.isVisible {
+            // Panel is visible, reposition it
+            let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+            let xPosition = buttonFrame.midX - (newWidth / 2)
+            let yPosition = buttonFrame.minY - newHeight - 8
+
+            panel.setFrame(
+                NSRect(x: xPosition, y: yPosition, width: newWidth, height: newHeight),
+                display: true,
+                animate: true
+            )
+        } else {
+            // Panel not visible, just resize in place
+            panel.setContentSize(NSSize(width: newWidth, height: newHeight))
+        }
+    }
+
     private func setupPanel() {
         // Create the SwiftUI content with proper background and border
         let menuView = MenuBarView(settings: settings)
@@ -86,36 +193,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     .stroke(Color.white.opacity(0.3), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 4)
-        
+
         let hostingController = NSHostingController(rootView: menuView)
-        
+
         // Ensure the hosting view is transparent and properly sized
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.masksToBounds = true
         hostingController.view.layer?.cornerRadius = 10
         hostingController.view.layer?.backgroundColor = NSColor.clear.cgColor
-        
-        // Create the panel with fixed size
-        let panelWidth: CGFloat = 300
-        let panelHeight: CGFloat = 545
-        
+
+        // Let SwiftUI determine size based on content
+        let fittingSize = hostingController.view.fittingSize
+        let panelWidth = fittingSize.width > 0 ? fittingSize.width : 340
+        let panelHeight = fittingSize.height > 0 ? fittingSize.height : 545
+
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
         )
-        
+
         // Configure panel properties for menu bar behavior
         panel.level = .popUpMenu
         panel.isOpaque = false
         panel.backgroundColor = .clear  // Clear to show SwiftUI background
         panel.hasShadow = false  // Disable panel shadow, use SwiftUI shadow instead
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        
+
         // Set the hosting controller as the content
         panel.contentView = hostingController.view
-        
+
         // Store the panel
         self.menuPanel = panel
     }
@@ -132,23 +240,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let panel = menuPanel,
               let button = statusItem?.button,
               let buttonWindow = button.window else { return }
-        
+
         // Calculate position relative to menu bar button
         let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        
-        let panelWidth: CGFloat = 300
-        let panelHeight: CGFloat = 545
-        
-        // Center horizontally under the button, move up slightly to touch menu bar
+
+        // Use actual panel size
+        let panelFrame = panel.frame
+        let panelWidth = panelFrame.width
+        let panelHeight = panelFrame.height
+
+        // Center horizontally under the button
         let xPosition = buttonFrame.midX - (panelWidth / 2)
-        let yPosition = buttonFrame.minY - panelHeight + 5
-        
+
+        // Position panel below the menu bar with a small gap
+        // buttonFrame.minY is the bottom of the menu bar button
+        // Subtract panelHeight to position below, subtract 8 for gap
+        let yPosition = buttonFrame.minY - panelHeight - 8
+
         // Set the panel's position
         panel.setFrameOrigin(NSPoint(x: xPosition, y: yPosition))
-        
+
         // Show the panel
         panel.orderFrontRegardless()
-        
+
         // Start monitoring for clicks outside
         startMonitoring()
     }

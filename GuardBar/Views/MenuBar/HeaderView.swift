@@ -140,5 +140,5 @@ struct HeaderView: View {
             timerService: TimerService()
         )
     }
-    .frame(width: 300)
+    .frame(width: 340)
 }

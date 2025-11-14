@@ -151,5 +151,5 @@ struct DisableOptionsView: View {
             onCancelTimer: { }
         )
     }
-    .frame(width: 300)
+    .frame(width: 340)
 }
