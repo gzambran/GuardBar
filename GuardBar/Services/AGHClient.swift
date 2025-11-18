@@ -16,39 +16,92 @@ class AGHClient {
     private let baseURL: String
     private let username: String
     private let password: String
-    
+
     init(host: String, port: Int, username: String, password: String) {
         self.baseURL = "http://\(host):\(port)"
         self.username = username
         self.password = password
     }
+
+    // MARK: - Demo Mode
+
+    private var isDemoMode: Bool {
+        return username == "demo" && password == "testing"
+    }
+
+    private var mockStatus: AGHStatus {
+        AGHStatus(
+            protectionEnabled: status?.protectionEnabled ?? true,
+            running: true,
+            version: "v0.107.52",
+            dnsAddresses: ["127.0.0.1:53", "[::1]:53"]
+        )
+    }
+
+    private var mockStats: AGHStats {
+        AGHStats(
+            numDnsQueries: 5678,
+            numBlockedFiltering: 1234,
+            numReplacedSafebrowsing: 12,
+            avgProcessingTime: 0.042
+        )
+    }
     
     // MARK: - API Methods
 
     func fetchStatus() async {
+        if isDemoMode {
+            self.status = mockStatus
+            self.errorMessage = nil
+            return
+        }
+
         if let result: AGHStatus = await performRequest(endpoint: "/control/status") {
             self.status = result
         }
     }
     
     func fetchStats() async {
+        if isDemoMode {
+            self.stats = mockStats
+            self.errorMessage = nil
+            return
+        }
+
         if let result: AGHStats = await performRequest(endpoint: "/control/stats") {
             self.stats = result
         }
     }
     
     func toggleProtection(enable: Bool) async {
+        if isDemoMode {
+            // Update status to reflect the toggle
+            self.status = AGHStatus(
+                protectionEnabled: enable,
+                running: true,
+                version: "v0.107.52",
+                dnsAddresses: ["127.0.0.1:53", "[::1]:53"]
+            )
+            self.errorMessage = nil
+            // Simulate the 0.5s delay like real API
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            // Refresh status and stats
+            await fetchStatus()
+            await fetchStats()
+            return
+        }
+
         let body = ["protection_enabled": enable]
-        
+
         // Use a simpler inline request for toggle since we don't need response parsing
         guard let url = URL(string: baseURL + "/control/dns_config") else { return }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         addAuthHeader(to: &request)
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
+
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
@@ -68,6 +121,10 @@ class AGHClient {
     }
     
     func testConnection() async -> (success: Bool, errorMessage: String?) {
+        if isDemoMode {
+            return (true, nil)
+        }
+
         guard let url = URL(string: baseURL + "/control/status") else {
             return (false, "Invalid URL: \(baseURL)")
         }

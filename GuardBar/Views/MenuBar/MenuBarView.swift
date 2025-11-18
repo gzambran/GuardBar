@@ -66,6 +66,7 @@ struct MenuBarView: View {
                     // Actions
                     ActionsView(
                         dashboardHost: settings.host,
+                        username: settings.username,
                         onRefresh: handleRefresh
                     )
                 }
@@ -150,12 +151,12 @@ struct MenuBarView: View {
     private func handleDisablePermanently() async {
         // Optimistic update
         optimisticProtectionState = false
-        
+
         // Make API call
         await viewModel.toggleProtection(enable: false, suppressErrors: true)
-        
-        // Close the menu
-        closePopover()
+
+        // Don't close the menu - let user see the state change
+        // closePopover()
     }
     
     private func handleEnable() async {

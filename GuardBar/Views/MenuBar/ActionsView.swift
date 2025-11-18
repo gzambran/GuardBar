@@ -10,13 +10,18 @@ import SwiftUI
 /// Displays action buttons: Dashboard, Refresh Stats, Settings, Quit
 struct ActionsView: View {
     let dashboardHost: String
+    let username: String
     let onRefresh: () async -> Void
-    
+
+    private var isDemoMode: Bool {
+        username == "demo"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Main actions section
             VStack(alignment: .leading, spacing: 12) {
-                MenuButton(title: "Open Dashboard", icon: "safari") {
+                MenuButton(title: "Open Dashboard", icon: "safari", disabled: isDemoMode) {
                     if let url = URL(string: "http://\(dashboardHost)") {
                         NSWorkspace.shared.open(url)
                         // Close the menu after opening dashboard
@@ -53,8 +58,9 @@ struct ActionsView: View {
 struct MenuButton: View {
     let title: String
     let icon: String
+    var disabled: Bool = false
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack {
@@ -66,13 +72,15 @@ struct MenuButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundColor(.primary)
+        .foregroundColor(disabled ? .secondary : .primary)
+        .disabled(disabled)
     }
 }
 
 #Preview {
     ActionsView(
         dashboardHost: "192.168.1.2",
+        username: "admin",
         onRefresh: { }
     )
     .frame(width: 340)
