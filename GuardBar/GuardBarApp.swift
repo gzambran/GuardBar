@@ -50,8 +50,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
         }
 
-        // Create the custom panel (dropdown menu)
-        setupPanel()
+        // Defer panel creation to next run loop iteration to avoid
+        // potential AttributeGraph race condition during app launch
+        DispatchQueue.main.async { [weak self] in
+            self?.setupPanel()
+        }
 
         // Register for NotificationCenter notifications
         // Note: AppDelegate lives for entire app lifetime, so observers are never manually removed
