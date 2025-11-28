@@ -205,10 +205,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingController.view.layer?.cornerRadius = 10
         hostingController.view.layer?.backgroundColor = NSColor.clear.cgColor
 
-        // Let SwiftUI determine size based on content
-        let fittingSize = hostingController.view.fittingSize
-        let panelWidth = fittingSize.width > 0 ? fittingSize.width : 340
-        let panelHeight = fittingSize.height > 0 ? fittingSize.height : 545
+        // Use fixed dimensions - fittingSize crashes on macOS 14.x
+        let panelWidth: CGFloat = 460
+        let panelHeight: CGFloat = 545
 
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
