@@ -41,7 +41,7 @@ struct ConnectionTab: View {
                     connectionTestResult = nil
                 }
 
-            TextField("Port", value: $settings.port, format: .number)
+            TextField("Port", value: $settings.port, format: .number.grouping(.never))
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: settings.port) {
                     onSettingsChanged()
