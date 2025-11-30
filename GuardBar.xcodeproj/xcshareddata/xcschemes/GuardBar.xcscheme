@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "797AF6212E99852D006B1D29"
+               BlueprintIdentifier = "799927812EDA67CA002AB249"
                BuildableName = "GuardBar.app"
                BlueprintName = "GuardBar"
                ReferencedContainer = "container:GuardBar.xcodeproj">
@@ -44,7 +44,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "797AF6212E99852D006B1D29"
+            BlueprintIdentifier = "799927812EDA67CA002AB249"
             BuildableName = "GuardBar.app"
             BlueprintName = "GuardBar"
             ReferencedContainer = "container:GuardBar.xcodeproj">
@@ -61,7 +61,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "797AF6212E99852D006B1D29"
+            BlueprintIdentifier = "799927812EDA67CA002AB249"
             BuildableName = "GuardBar.app"
             BlueprintName = "GuardBar"
             ReferencedContainer = "container:GuardBar.xcodeproj">
