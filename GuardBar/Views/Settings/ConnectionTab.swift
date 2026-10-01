@@ -16,7 +16,7 @@ struct ConnectionTab: View {
     @State private var showingConnectionError = false
     @State private var clearTask: Task<Void, Never>?
 
-    let onSettingsChanged: () -> Void
+    let onConnectionVerified: () -> Void
     let onPasswordChanged: (String) -> Void
 
     var body: some View {
@@ -37,21 +37,18 @@ struct ConnectionTab: View {
             TextField("Host/IP Address", text: $settings.host)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: settings.host) {
-                    onSettingsChanged()
                     connectionTestResult = nil
                 }
 
             TextField("Port", value: $settings.port, format: .number.grouping(.never))
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: settings.port) {
-                    onSettingsChanged()
                     connectionTestResult = nil
                 }
 
             TextField("Username", text: $settings.username)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: settings.username) {
-                    onSettingsChanged()
                     connectionTestResult = nil
                 }
 
@@ -108,14 +105,17 @@ struct ConnectionTab: View {
         showingConnectionError = false
 
         Task {
-            let client = AGHClient(
-                host: settings.host,
-                port: settings.port,
-                username: settings.username,
-                password: password
-            )
-
-            let (success, errorMessage) = await client.testConnection()
+            var errorMessage: String?
+            if let connection = settings.connection(password: password) {
+                do {
+                    _ = try await connection.makeService().fetchStatus()
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+            } else {
+                errorMessage = "Enter a host, username, and password"
+            }
+            let success = errorMessage == nil
 
             await MainActor.run {
                 isTestingConnection = false
@@ -124,8 +124,8 @@ struct ConnectionTab: View {
 
                 if success {
                     connectionTestResult = "Connected successfully"
-                    // Notify that configuration is complete
-                    NotificationCenter.default.post(name: .settingsChanged, object: nil)
+                    // Make sure the menu picks up the verified connection
+                    onConnectionVerified()
                 } else {
                     connectionTestResult = errorMessage ?? "Failed to connect"
                 }
@@ -148,7 +148,7 @@ struct ConnectionTab: View {
     ConnectionTab(
         settings: AppSettings(),
         password: .constant(""),
-        onSettingsChanged: {},
+        onConnectionVerified: {},
         onPasswordChanged: { _ in }
     )
 }

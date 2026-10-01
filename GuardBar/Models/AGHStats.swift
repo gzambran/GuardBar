@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct AGHStats: Codable {
+struct AGHStats: Codable, Equatable {
     let numDnsQueries: Int
     let numBlockedFiltering: Int
     let numReplacedSafebrowsing: Int

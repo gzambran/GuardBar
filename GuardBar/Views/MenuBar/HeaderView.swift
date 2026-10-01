@@ -10,9 +10,10 @@ import SwiftUI
 /// Displays the status header with icon, protection state, and timer information
 struct HeaderView: View {
     let status: AGHStatus?
-    let isLoading: Bool
     let protectionOn: Bool
-    @ObservedObject var timerService: TimerService
+    /// End of a timed pause, if one is running
+    let disabledUntil: Date?
+    let errorMessage: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -33,17 +34,16 @@ struct HeaderView: View {
                     
                     // Actual content layers - overlaid on top
                     Group {
-                        if status == nil || isLoading {
+                        if status == nil {
                             Text("Loading...")
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                        } else if timerService.isTimerActive {
-                            if timerService.remainingTime > 0 {
-                                Text("Re-enabling in \(timerService.formatRemainingTime())")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                            } else {
-                                Text("Re-enabling...")
+                        } else if let disabledUntil {
+                            TimelineView(.periodic(from: .now, by: 1)) { context in
+                                let remaining = disabledUntil.timeIntervalSince(context.date)
+                                Text(remaining > 0
+                                     ? "Re-enabling in \(Self.formatRemainingTime(remaining))"
+                                     : "Re-enabling...")
                                     .font(.title3)
                                     .fontWeight(.semibold)
                             }
@@ -59,6 +59,16 @@ struct HeaderView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .padding(.horizontal, 20)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+            }
         }
         .background(Color(NSColor.controlBackgroundColor))
         .overlay(
@@ -73,11 +83,11 @@ struct HeaderView: View {
     
     private var statusIcon: String {
         // Show neutral icon when loading or no status
-        if status == nil || isLoading {
+        if status == nil {
             return "shield"
         }
         
-        if timerService.isTimerActive {
+        if disabledUntil != nil {
             return "clock.badge.exclamationmark.fill"
         }
         return protectionOn ? "shield.fill" : "shield.slash.fill"
@@ -85,14 +95,29 @@ struct HeaderView: View {
     
     private var statusColor: Color {
         // Show neutral gray when loading or no status
-        if status == nil || isLoading {
+        if status == nil {
             return .secondary
         }
         
-        if timerService.isTimerActive {
+        if disabledUntil != nil {
             return .orange
         }
         return protectionOn ? .green : .red
+    }
+
+    static func formatRemainingTime(_ interval: TimeInterval) -> String {
+        let totalSeconds = Int(interval.rounded(.up))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
     }
 }
 
@@ -101,9 +126,9 @@ struct HeaderView: View {
         // Preview loading state
         HeaderView(
             status: nil,
-            isLoading: true,
             protectionOn: false,
-            timerService: TimerService()
+            disabledUntil: nil,
+            errorMessage: nil
         )
         
         Divider()
@@ -116,18 +141,14 @@ struct HeaderView: View {
                 version: "0.107.0",
                 dnsAddresses: ["192.168.1.2"]
             ),
-            isLoading: false,
             protectionOn: false,
-            timerService: {
-                let service = TimerService()
-                service.scheduleReEnable(after: 300) { }
-                return service
-            }()
+            disabledUntil: Date().addingTimeInterval(300),
+            errorMessage: nil
         )
         
         Divider()
         
-        // Preview with protection on
+        // Preview with protection on and a connection error
         HeaderView(
             status: AGHStatus(
                 protectionEnabled: true,
@@ -135,9 +156,9 @@ struct HeaderView: View {
                 version: "0.107.0",
                 dnsAddresses: ["192.168.1.2"]
             ),
-            isLoading: false,
             protectionOn: true,
-            timerService: TimerService()
+            disabledUntil: nil,
+            errorMessage: "Connection timed out. Check your host and port."
         )
     }
     .frame(width: 340)

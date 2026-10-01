@@ -13,19 +13,19 @@ class SettingsWindowManager {
     private var windowController: NSWindowController?
     
     /// Show the settings window, creating it if needed
-    func showSettings(settings: AppSettings) {
+    func showSettings(model: AppModel) {
         if let windowController = windowController {
             // Window exists, just bring it to front on current space
             windowController.window?.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
         } else {
             // Create new settings window
-            createSettingsWindow(settings: settings)
+            createSettingsWindow(model: model)
         }
     }
     
-    private func createSettingsWindow(settings: AppSettings) {
-        let settingsView = SettingsView(settings: settings)
+    private func createSettingsWindow(model: AppModel) {
+        let settingsView = SettingsView(settings: model.settings, model: model)
         let hostingController = NSHostingController(rootView: settingsView)
         
         let window = NSWindow(contentViewController: hostingController)

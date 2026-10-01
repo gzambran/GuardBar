@@ -22,16 +22,16 @@ Want to try it early? You can build from source (see instructions below).
 
 ## Requirements
 
-- macOS 14.0 (Sonoma) or later
-- AdGuard Home instance (running on your network)
+- macOS 15.6 (Sequoia) or later
+- AdGuard Home v0.107.27 or later (running on your network)
 - AdGuard Home credentials (username and password)
 
 ## Building from Source
 
 ### Prerequisites
 
-- Xcode 15.0 or later
-- macOS 14.0 or later
+- Xcode 26.0 or later
+- macOS 15.6 or later
 
 ### Build Instructions
 

@@ -25,12 +25,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var menuPanel: NSPanel?
     var eventMonitor: Any?
-    private var pollingService = PollingService()
-    private var settingsCancellables = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     private let settingsWindowManager = SettingsWindowManager()
+    private var currentIconState: MenuBarIconState?
 
-    // Shared settings instance
+    // Shared settings and app state
     let settings = AppSettings()
+    private(set) lazy var model = AppModel(settings: settings)
 
     deinit {
         // Clean up event monitor to prevent memory leaks
@@ -56,16 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.setupPanel()
         }
 
-        // Register for NotificationCenter notifications
-        // Note: AppDelegate lives for entire app lifetime, so observers are never manually removed
-        // They will be automatically cleaned up when the app terminates
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleIconStateChange),
-            name: .menuBarIconStateChanged,
-            object: nil
-        )
-
+        // AppDelegate lives for the entire app lifetime, so observers are never removed
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(hidePanel),
@@ -80,18 +72,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleSettingsChanged),
-            name: .settingsChanged,
-            object: nil
-        )
+        // objectWillChange fires before the change lands, so read the icon state on the next run loop pass
+        model.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in
+                guard let self else { return }
+                self.updateMenuBarIcon(state: self.model.iconState)
+            }
+            .store(in: &cancellables)
 
-        // Setup polling
-        setupPolling()
-        
-        // Listen for settings changes
-        observeSettingsChanges()
+        // Setup view and main menu have different sizes
+        model.$isConfigured
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in self?.handleConfigurationChanged() }
+            .store(in: &cancellables)
+
+        model.start()
     }
     
     private func setupApplicationMenu() {
@@ -145,7 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         openSettings()
     }
 
-    @objc func handleSettingsChanged() {
+    private func handleConfigurationChanged() {
         // Give SwiftUI time to update the layout before resizing
         Task { @MainActor in
             // Small delay to let SwiftUI recalculate layout
@@ -188,7 +185,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupPanel() {
         // Create the SwiftUI content with proper background and border
-        let menuView = MenuBarView(settings: settings)
+        let menuView = MenuBarView(model: model, settings: settings)
             .background(Color(NSColor.windowBackgroundColor))
             .cornerRadius(10)
             .overlay(
@@ -267,6 +264,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start monitoring for clicks outside
         startMonitoring()
+
+        // Make sure the menu shows fresh data
+        Task { await model.refresh() }
     }
     
     @objc func hidePanel() {
@@ -308,83 +308,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func openSettings() {
-        settingsWindowManager.showSettings(settings: settings)
-    }
-    
-    @objc func handleIconStateChange(_ notification: Notification) {
-        if let state = notification.object as? MenuBarIconState {
-            updateMenuBarIcon(state: state)
-        }
+        settingsWindowManager.showSettings(model: model)
     }
     
     func updateMenuBarIcon(state: MenuBarIconState) {
-        guard let button = statusItem?.button else { return }
-        
+        guard let button = statusItem?.button, state != currentIconState else { return }
+        currentIconState = state
+
         // Create the icon with the appropriate symbol
         if let image = NSImage(systemSymbolName: state.iconName, accessibilityDescription: "GuardBar") {
             // Make it a template image for native macOS appearance
             image.isTemplate = true
             button.image = image
         }
-    }
-    
-    private func setupPolling() {
-        Task { @MainActor in
-            // Create API client if credentials are configured
-            guard !settings.host.isEmpty, !settings.username.isEmpty,
-                  let password = KeychainService.shared.getPassword(), !password.isEmpty else {
-                return
-            }
-            
-            let client = AGHClient(
-                host: settings.host,
-                port: settings.port,
-                username: settings.username,
-                password: password
-            )
-            
-            pollingService.configure(settings: settings, client: client)
-            
-            // Start polling if enabled
-            if settings.enablePolling {
-                pollingService.startPolling(interval: TimeInterval(settings.pollingInterval))
-            }
-        }
-    }
-    
-    private func observeSettingsChanges() {
-        // Restart polling when settings change
-        settings.$enablePolling
-            .sink { [weak self] enabled in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    if enabled {
-                        self.pollingService.startPolling(interval: TimeInterval(self.settings.pollingInterval))
-                    } else {
-                        self.pollingService.stopPolling()
-                    }
-                }
-            }
-            .store(in: &settingsCancellables)
-        
-        settings.$pollingInterval
-            .sink { [weak self] interval in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    if self.settings.enablePolling {
-                        self.pollingService.startPolling(interval: TimeInterval(interval))
-                    }
-                }
-            }
-            .store(in: &settingsCancellables)
-        
-        // Reconfigure polling when connection settings change
-        settings.$host
-            .combineLatest(settings.$port, settings.$username)
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.setupPolling()
-            }
-            .store(in: &settingsCancellables)
     }
 }

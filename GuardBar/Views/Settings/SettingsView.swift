@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    let model: AppModel
     @State private var password: String = ""
     @State private var showKeychainError = false
 
@@ -17,17 +18,14 @@ struct SettingsView: View {
             ConnectionTab(
                 settings: settings,
                 password: $password,
-                onSettingsChanged: notifySettingsChanged,
+                onConnectionVerified: model.credentialsDidChange,
                 onPasswordChanged: savePasswordToKeychain
             )
             .tabItem {
                 Label("Connection", systemImage: "network")
             }
             
-            PreferencesTab(
-                settings: settings,
-                onSettingsChanged: notifySettingsChanged
-            )
+            PreferencesTab(settings: settings)
             .tabItem {
                 Label("Preferences", systemImage: "gearshape")
             }
@@ -60,22 +58,20 @@ struct SettingsView: View {
     }
     
     private func savePasswordToKeychain(_ newPassword: String) {
-        if !newPassword.isEmpty {
-            if !KeychainService.shared.savePassword(newPassword) {
-                // Show error alert and clear password field
-                showKeychainError = true
-            }
+        let saved = newPassword.isEmpty
+            ? KeychainService.shared.deletePassword()
+            : KeychainService.shared.savePassword(newPassword)
+
+        if saved {
+            model.credentialsDidChange()
+        } else {
+            // Show error alert and clear password field
+            showKeychainError = true
         }
-    }
-    
-    private func notifySettingsChanged() {
-        NotificationCenter.default.post(
-            name: .settingsChanged,
-            object: nil
-        )
     }
 }
 
 #Preview {
-    SettingsView(settings: AppSettings())
+    let settings = AppSettings()
+    SettingsView(settings: settings, model: AppModel(settings: settings))
 }

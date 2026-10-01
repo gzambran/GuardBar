@@ -9,22 +9,16 @@ import SwiftUI
 
 struct PreferencesTab: View {
     @ObservedObject var settings: AppSettings
-    let onSettingsChanged: () -> Void
     
     var body: some View {
         Form {
             Section("General") {
                 Toggle("Start at Login", isOn: $settings.startAtLogin)
-                
-                Toggle("Show Notifications", isOn: $settings.showNotifications)
             }
             
             Section("Polling") {
                 Toggle("Enable Auto-Refresh", isOn: $settings.enablePolling)
                     .help("Automatically check AdGuard Home status in the background")
-                    .onChange(of: settings.enablePolling) {
-                        onSettingsChanged()
-                    }
                 
                 Picker("Poll Interval", selection: $settings.pollingInterval) {
                     Text("15 seconds").tag(15)
@@ -35,9 +29,6 @@ struct PreferencesTab: View {
                 }
                 .help("How often to check status in the background")
                 .disabled(!settings.enablePolling)
-                .onChange(of: settings.pollingInterval) {
-                    onSettingsChanged()
-                }
             }
             
             Section("Timer Presets") {
@@ -67,8 +58,5 @@ struct PreferencesTab: View {
 }
 
 #Preview {
-    PreferencesTab(
-        settings: AppSettings(),
-        onSettingsChanged: {}
-    )
+    PreferencesTab(settings: AppSettings())
 }

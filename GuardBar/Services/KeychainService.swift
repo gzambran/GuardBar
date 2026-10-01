@@ -17,19 +17,18 @@ class KeychainService {
     private init() {}
     
     func savePassword(_ password: String) -> Bool {
-        guard let data = password.data(using: .utf8) else { return false }
-        
-        // First, try to delete any existing password
-        _ = deletePassword()
-        
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: data
+            kSecAttrAccount as String: account
         ]
-        
-        let status = SecItemAdd(query as CFDictionary, nil)
+        let attributes: [String: Any] = [kSecValueData as String: Data(password.utf8)]
+
+        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            let addQuery = query.merging(attributes) { _, new in new }
+            return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
+        }
         return status == errSecSuccess
     }
     

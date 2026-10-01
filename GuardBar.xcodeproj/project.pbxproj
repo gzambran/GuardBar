@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		7A1B00000000000000000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7999277A2EDA67CA002AB249 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 799927812EDA67CA002AB249;
+			remoteInfo = GuardBar;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		7A1B00000000000000000001 /* GuardBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GuardBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		799927822EDA67CA002AB249 /* GuardBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GuardBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		7A1B00000000000000000002 /* GuardBarTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GuardBarTests;
+			sourceTree = "<group>";
+		};
 		799927842EDA67CA002AB249 /* GuardBar */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = GuardBar;
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7A1B00000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7999277F2EDA67CA002AB249 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				799927842EDA67CA002AB249 /* GuardBar */,
+				7A1B00000000000000000002 /* GuardBarTests */,
 				799927832EDA67CA002AB249 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				799927822EDA67CA002AB249 /* GuardBar.app */,
+				7A1B00000000000000000001 /* GuardBarTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,29 @@
 			productReference = 799927822EDA67CA002AB249 /* GuardBar.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7A1B00000000000000000003 /* GuardBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A1B0000000000000000000B /* Build configuration list for PBXNativeTarget "GuardBarTests" */;
+			buildPhases = (
+				7A1B00000000000000000004 /* Sources */,
+				7A1B00000000000000000005 /* Frameworks */,
+				7A1B00000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A1B00000000000000000008 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A1B00000000000000000002 /* GuardBarTests */,
+			);
+			name = GuardBarTests;
+			packageProductDependencies = (
+			);
+			productName = GuardBarTests;
+			productReference = 7A1B00000000000000000001 /* GuardBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +130,10 @@
 				TargetAttributes = {
 					799927812EDA67CA002AB249 = {
 						CreatedOnToolsVersion = 26.1.1;
+					};
+					7A1B00000000000000000003 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = 799927812EDA67CA002AB249;
 					};
 				};
 			};
@@ -100,11 +152,19 @@
 			projectRoot = "";
 			targets = (
 				799927812EDA67CA002AB249 /* GuardBar */,
+				7A1B00000000000000000003 /* GuardBarTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7A1B00000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		799927802EDA67CA002AB249 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +175,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7A1B00000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7999277E2EDA67CA002AB249 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -123,6 +190,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7A1B00000000000000000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 799927812EDA67CA002AB249 /* GuardBar */;
+			targetProxy = 7A1B00000000000000000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7999278B2EDA67CB002AB249 /* Debug */ = {
@@ -279,7 +354,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zambrano.guardbar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -327,7 +402,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zambrano.guardbar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -338,6 +413,48 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7A1B00000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP5CPS7QZQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zambrano.guardbarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GuardBar.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GuardBar";
+			};
+			name = Debug;
+		};
+		7A1B0000000000000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LP5CPS7QZQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zambrano.guardbarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GuardBar.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GuardBar";
 			};
 			name = Release;
 		};
@@ -358,6 +475,15 @@
 			buildConfigurations = (
 				7999278E2EDA67CB002AB249 /* Debug */,
 				7999278F2EDA67CB002AB249 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A1B0000000000000000000B /* Build configuration list for PBXNativeTarget "GuardBarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A1B00000000000000000009 /* Debug */,
+				7A1B0000000000000000000A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

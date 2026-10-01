@@ -13,10 +13,9 @@ struct DisableOptionsView: View {
     let isTimerActive: Bool
     let hasError: Bool
     let enabledPresets: Set<DisablePreset>
-    let onDisableForDuration: (TimeInterval) async -> Void
-    let onDisablePermanently: () async -> Void
+    /// Disables protection; nil duration means until re-enabled manually
+    let onDisable: (TimeInterval?) async -> Void
     let onEnable: () async -> Void
-    let onCancelTimer: () async -> Void
     
     private var isDisabled: Bool {
         !protectionOn || isTimerActive || hasError
@@ -39,7 +38,7 @@ struct DisableOptionsView: View {
                     Button {
                         guard !isDisabled else { return }
                         Task {
-                            await onDisableForDuration(preset.duration)
+                            await onDisable(preset.duration)
                         }
                     } label: {
                         HStack {
@@ -63,7 +62,7 @@ struct DisableOptionsView: View {
                 Button {
                     guard !isDisabled else { return }
                     Task {
-                        await onDisablePermanently()
+                        await onDisable(nil)
                     }
                 } label: {
                     HStack {
@@ -85,10 +84,7 @@ struct DisableOptionsView: View {
             Button {
                 guard !isEnableDisabled else { return }
                 Task {
-                    // If timer is active, cancel it first
-                    if isTimerActive {
-                        await onCancelTimer()
-                    }
+                    // Also ends a timed pause early
                     await onEnable()
                 }
             } label: {
@@ -117,10 +113,8 @@ struct DisableOptionsView: View {
             isTimerActive: false,
             hasError: false,
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
-            onDisableForDuration: { _ in },
-            onDisablePermanently: { },
-            onEnable: { },
-            onCancelTimer: { }
+            onDisable: { _ in },
+            onEnable: { }
         )
         
         Divider()
@@ -131,10 +125,8 @@ struct DisableOptionsView: View {
             isTimerActive: false,
             hasError: false,
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
-            onDisableForDuration: { _ in },
-            onDisablePermanently: { },
-            onEnable: { },
-            onCancelTimer: { }
+            onDisable: { _ in },
+            onEnable: { }
         )
         
         Divider()
@@ -145,10 +137,8 @@ struct DisableOptionsView: View {
             isTimerActive: true,
             hasError: false,
             enabledPresets: [.thirtySeconds, .oneMinute, .fiveMinutes, .thirtyMinutes, .oneHour],
-            onDisableForDuration: { _ in },
-            onDisablePermanently: { },
-            onEnable: { },
-            onCancelTimer: { }
+            onDisable: { _ in },
+            onEnable: { }
         )
     }
     .frame(width: 340)

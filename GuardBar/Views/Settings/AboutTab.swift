@@ -8,6 +8,13 @@
 import SwiftUI
 
 struct AboutTab: View {
+    private var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "Version \(version) (\(build))"
+    }
+
     var body: some View {
         Form {
             Section("About GuardBar") {
@@ -21,7 +28,7 @@ struct AboutTab: View {
                             Text("GuardBar")
                                 .font(.title)
                                 .fontWeight(.bold)
-                            Text("Version 1.0.0")
+                            Text(versionText)
                                 .foregroundColor(.secondary)
                         }
                     }

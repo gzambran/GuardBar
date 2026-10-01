@@ -7,38 +7,198 @@
 
 import Foundation
 
-@MainActor
-class AGHClient {
-    var status: AGHStatus?
-    var stats: AGHStats?
-    var errorMessage: String?
+/// The AdGuard Home operations the app depends on
+protocol AGHService: AnyObject {
+    func fetchStatus() async throws -> AGHStatus
+    func fetchStats() async throws -> AGHStats
+    /// Turns protection on or off. A `duration` pauses protection and AdGuard Home re-enables it itself.
+    func setProtection(enabled: Bool, duration: TimeInterval?) async throws
+}
 
-    private let baseURL: String
-    private let username: String
-    private let password: String
+/// Everything needed to reach an AdGuard Home instance
+struct AGHConnection: Equatable {
+    let host: String
+    let port: Int
+    let username: String
+    let password: String
 
-    init(host: String, port: Int, username: String, password: String) {
-        self.baseURL = "http://\(host):\(port)"
-        self.username = username
-        self.password = password
+    var isDemo: Bool {
+        username == "demo" && password == "testing"
     }
 
-    // MARK: - Demo Mode
+    /// Base URL for the server. `host` may include an `http://` or `https://` prefix; plain hosts use HTTP.
+    var baseURL: URL? {
+        var address = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        while address.hasSuffix("/") { address.removeLast() }
 
-    private var isDemoMode: Bool {
-        return username == "demo" && password == "testing"
+        var components = URLComponents()
+        components.scheme = "http"
+        for scheme in ["http", "https"] where address.lowercased().hasPrefix("\(scheme)://") {
+            components.scheme = scheme
+            address = String(address.dropFirst(scheme.count + 3))
+        }
+
+        // IPv6 literals need brackets in a URL
+        if address.contains(":") && !address.hasPrefix("[") {
+            address = "[\(address)]"
+        }
+
+        guard !address.isEmpty else { return nil }
+        components.host = address
+        components.port = port
+        return components.url
     }
 
-    private var mockStatus: AGHStatus {
-        AGHStatus(
-            protectionEnabled: status?.protectionEnabled ?? true,
+    func makeService() -> AGHService {
+        isDemo ? DemoAGHClient() : AGHClient(connection: self)
+    }
+}
+
+enum AGHError: LocalizedError, Equatable {
+    case invalidURL
+    case invalidResponse
+    case unauthorized
+    case rateLimited
+    case http(Int)
+    case timedOut
+    case cannotReach(String)
+    case network(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Invalid server address"
+        case .invalidResponse:
+            return "Invalid response from server"
+        case .unauthorized:
+            return "Invalid username or password"
+        case .rateLimited:
+            return "Too many failed attempts. AdGuard Home has temporarily blocked access."
+        case .http(let code):
+            return "Server returned error: HTTP \(code)"
+        case .timedOut:
+            return "Connection timed out. Check your host and port."
+        case .cannotReach(let address):
+            return "Cannot reach server at \(address). Check host and port."
+        case .network(let message):
+            return message
+        }
+    }
+}
+
+final class AGHClient: AGHService {
+    typealias Transport = (URLRequest) async throws -> (Data, URLResponse)
+
+    private let connection: AGHConnection
+    private let transport: Transport
+    private let timeout: TimeInterval = 10
+
+    init(connection: AGHConnection, transport: @escaping Transport = { try await URLSession.shared.data(for: $0) }) {
+        self.connection = connection
+        self.transport = transport
+    }
+
+    // MARK: - API Methods
+
+    func fetchStatus() async throws -> AGHStatus {
+        let data = try await send(path: "/control/status")
+        return try decode(AGHStatus.self, from: data)
+    }
+
+    func fetchStats() async throws -> AGHStats {
+        let data = try await send(path: "/control/stats")
+        return try decode(AGHStats.self, from: data)
+    }
+
+    func setProtection(enabled: Bool, duration: TimeInterval?) async throws {
+        var body: [String: Any] = ["enabled": enabled]
+        if !enabled, let duration {
+            body["duration"] = Int((duration * 1000).rounded())
+        }
+        _ = try await send(path: "/control/protection", method: "POST", body: body)
+    }
+
+    // MARK: - Private Helpers
+
+    private func send(path: String, method: String = "GET", body: [String: Any]? = nil) async throws -> Data {
+        guard let baseURL = connection.baseURL,
+              let url = URL(string: path, relativeTo: baseURL) else {
+            throw AGHError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = timeout
+        let credentials = Data("\(connection.username):\(connection.password)".utf8).base64EncodedString()
+        request.setValue("Basic \(credentials)", forHTTPHeaderField: "Authorization")
+
+        if let body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await transport(request)
+        } catch let error as URLError {
+            switch error.code {
+            case .timedOut:
+                throw AGHError.timedOut
+            case .cannotFindHost, .cannotConnectToHost:
+                throw AGHError.cannotReach(baseURL.absoluteString)
+            default:
+                throw AGHError.network(error.localizedDescription)
+            }
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AGHError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            return data
+        case 401, 403:
+            throw AGHError.unauthorized
+        case 429:
+            throw AGHError.rateLimited
+        default:
+            throw AGHError.http(httpResponse.statusCode)
+        }
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        do {
+            return try JSONDecoder().decode(type, from: data)
+        } catch {
+            throw AGHError.invalidResponse
+        }
+    }
+}
+
+// MARK: - Demo Mode
+
+/// In-memory stand-in for AdGuard Home, used with the demo credentials
+final class DemoAGHClient: AGHService {
+    private var protectionEnabled = true
+    private var resumeAt: Date?
+
+    func fetchStatus() async throws -> AGHStatus {
+        if let resumeAt, resumeAt <= Date() {
+            protectionEnabled = true
+            self.resumeAt = nil
+        }
+        return AGHStatus(
+            protectionEnabled: protectionEnabled,
             running: true,
             version: "v0.107.52",
-            dnsAddresses: ["127.0.0.1:53", "[::1]:53"]
+            dnsAddresses: ["127.0.0.1:53", "[::1]:53"],
+            protectionDisabledDuration: resumeAt.map { Int($0.timeIntervalSinceNow * 1000) }
         )
     }
 
-    private var mockStats: AGHStats {
+    func fetchStats() async throws -> AGHStats {
         AGHStats(
             numDnsQueries: 5678,
             numBlockedFiltering: 1234,
@@ -46,166 +206,9 @@ class AGHClient {
             avgProcessingTime: 0.042
         )
     }
-    
-    // MARK: - API Methods
 
-    func fetchStatus() async {
-        if isDemoMode {
-            self.status = mockStatus
-            self.errorMessage = nil
-            return
-        }
-
-        if let result: AGHStatus = await performRequest(endpoint: "/control/status") {
-            self.status = result
-        }
-    }
-    
-    func fetchStats() async {
-        if isDemoMode {
-            self.stats = mockStats
-            self.errorMessage = nil
-            return
-        }
-
-        if let result: AGHStats = await performRequest(endpoint: "/control/stats") {
-            self.stats = result
-        }
-    }
-    
-    func toggleProtection(enable: Bool) async {
-        if isDemoMode {
-            // Update status to reflect the toggle
-            self.status = AGHStatus(
-                protectionEnabled: enable,
-                running: true,
-                version: "v0.107.52",
-                dnsAddresses: ["127.0.0.1:53", "[::1]:53"]
-            )
-            self.errorMessage = nil
-            // Simulate the 0.5s delay like real API
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            // Refresh status and stats
-            await fetchStatus()
-            await fetchStats()
-            return
-        }
-
-        let body = ["protection_enabled": enable]
-
-        // Use a simpler inline request for toggle since we don't need response parsing
-        guard let url = URL(string: baseURL + "/control/dns_config") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(to: &request)
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
-                // Success - clear any previous errors
-                self.errorMessage = nil
-                // Small delay to let AdGuard Home process the change
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                // Refresh status after toggle
-                await fetchStatus()
-                await fetchStats()
-            } else {
-                self.errorMessage = "Failed to toggle protection"
-            }
-        } catch {
-            self.errorMessage = error.localizedDescription
-        }
-    }
-    
-    func testConnection() async -> (success: Bool, errorMessage: String?) {
-        if isDemoMode {
-            return (true, nil)
-        }
-
-        guard let url = URL(string: baseURL + "/control/status") else {
-            return (false, "Invalid URL: \(baseURL)")
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
-        addAuthHeader(to: &request)
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                if (200...299).contains(httpResponse.statusCode) {
-                    return (true, nil)
-                } else if httpResponse.statusCode == 401 {
-                    return (false, "Invalid username or password")
-                } else if httpResponse.statusCode == 429 {
-                    return (false, "Too many failed attempts. AdGuard Home has temporarily blocked access.")
-                } else {
-                    return (false, "Server returned error: HTTP \(httpResponse.statusCode)")
-                }
-            } else {
-                return (false, "Invalid response from server")
-            }
-        } catch let error as NSError {
-            if error.code == NSURLErrorTimedOut {
-                return (false, "Connection timed out. Check your host and port.")
-            } else if error.code == NSURLErrorCannotFindHost || error.code == NSURLErrorCannotConnectToHost {
-                return (false, "Cannot reach server at \(baseURL). Check host and port.")
-            } else {
-                return (false, error.localizedDescription)
-            }
-        }
-    }
-    
-    // MARK: - Private Helpers
-    
-    private func performRequest<T: Codable>(endpoint: String, method: String = "GET", body: [String: Any]? = nil) async -> T? {
-        guard let url = URL(string: baseURL + endpoint) else {
-            self.errorMessage = "Invalid URL"
-            return nil
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        addAuthHeader(to: &request)
-
-        // Add body if present
-        if let body = body {
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        }
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                self.errorMessage = "Invalid response"
-                return nil
-            }
-
-            guard (200...299).contains(httpResponse.statusCode) else {
-                self.errorMessage = "HTTP \(httpResponse.statusCode)"
-                return nil
-            }
-
-            let decoded = try JSONDecoder().decode(T.self, from: data)
-            self.errorMessage = nil
-            return decoded
-
-        } catch {
-            self.errorMessage = error.localizedDescription
-            return nil
-        }
-    }
-    
-    private func addAuthHeader(to request: inout URLRequest) {
-        let credentials = "\(username):\(password)"
-        if let credentialsData = credentials.data(using: .utf8) {
-            let base64Credentials = credentialsData.base64EncodedString()
-            request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
-        }
+    func setProtection(enabled: Bool, duration: TimeInterval?) async throws {
+        protectionEnabled = enabled
+        resumeAt = enabled ? nil : duration.map { Date().addingTimeInterval($0) }
     }
 }
