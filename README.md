@@ -14,8 +14,8 @@ Want to try it early? You can build from source (see instructions below).
 
 - **Quick Access** - Manage AdGuard Home directly from your menu bar
 - **One-Click Toggle** - Enable or disable ad blocking instantly
-- **Smart Timers** - Temporarily disable protection with customizable presets (30s, 1m, 5m, 30m, 1h, 2h)
-- **Real-Time Status** - Color-coded menu bar icons show protection status at a glance
+- **Smart Timers** - Temporarily disable protection with customizable presets (30s, 1m, 5m, 30m, 1h, 2h). Timers run on your AdGuard Home server, so protection comes back on even if your Mac sleeps
+- **Real-Time Status** - Distinct menu bar icons show protection, timer, and connection status at a glance
 - **Background Monitoring** - Automatic status updates via configurable polling
 - **Start at Login** - Launches automatically with macOS
 - **Native Experience** - Built with SwiftUI for a smooth, modern macOS feel
